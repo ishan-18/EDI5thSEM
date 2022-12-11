@@ -40,6 +40,14 @@ router.post('/register', async (req,res) => {
     try {
         const {name, email, password} = req.body
 
+        const user = await User.findOne({email});
+        if(email === user.email){
+            return res.status(400).json({
+                success: false,
+                data: "User Already exists"
+            })
+        }
+
         const hashedPassword = await bcrypt.hash(password, 12);
 
         const newUser = new User({
@@ -51,7 +59,6 @@ router.post('/register', async (req,res) => {
         await newUser.save()
 
         sendTokenResponse(newUser, 201, res)
-
 
     } catch (err) {
         return res.status(400).json({err: err.message})
@@ -120,7 +127,8 @@ const sendTokenResponse = (user, statusCode, res) => {
     .cookie('token', token, options)
     .json({
         success: true,
-        token
+        token,
+        user
     })
 }
 

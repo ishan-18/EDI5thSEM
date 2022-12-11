@@ -11,6 +11,11 @@ dotenv.config({
     path: './config/config.env'
 })
 
+const app = express();
+app.use(express.json())
+app.use(cookieParser())
+app.use(fileUpload())
+
 mongoose.connect(process.env.MONGO_URI);
 
 mongoose.connection.on('connected', () => {
@@ -20,11 +25,6 @@ mongoose.connection.on('connected', () => {
 mongoose.connection.on('error', (e) => {
     console.error(`Error:  ${e.message}`.red)
 })
-
-const app = express();
-app.use(express.json())
-app.use(cookieParser())
-app.use(fileUpload())
 
 
 if(process.env.ENVIRONMENT === 'development'){
