@@ -3,6 +3,7 @@ const User = require('../models/User')
 const Company = require('../models/Company');
 const protect = require('../middleware/auth');
 const authorize = require('../middleware/authAdmin');
+const bcrypt = require('bcrypt')
 
 router.put('/user/:id/isVerified', protect, authorize("admin"), async (req,res) => {
     try {
@@ -104,5 +105,62 @@ router.delete('/user/:id', protect, authorize("admin"), async (req,res) => {
         return res.status(500).json({err: err.message})
     }
 })
+
+router.post('/login', protect, authorize("admin"), async (req,res) => {
+    try {
+        const {email, password} = req.body
+
+        const user = await User.findOne({email}).select("+password")
+        if(!user){
+            res.status(400).json({
+                success: false,
+                data: 'Invalid Credentials'
+            })
+        }
+
+        if(user.role === "admin"){
+            const matchPassword = await bcrypt.compare(password, user.password)
+            if(!matchPassword){
+                res.status(400).json({
+                    success: false,
+                    data: 'Invalid Credentials'
+                })
+            }else{
+                sendTokenResponse(user, 200, res)
+            }
+        }else{
+            res.status(400).json({
+                success: false,
+                data: 'Admin Access'
+            })
+        }
+
+    } catch (err) {
+        return res.status(200).json({err: err.message})
+    }
+})
+
+const sendTokenResponse = (user, statusCode, res) => {
+    const token = user.getSignedJwtToken()
+
+    const options = {
+        expires: new Date(
+            Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+        ),
+        httpOnly: true
+    };
+
+    if(process.env.ENVIRONMENT === 'production'){
+        options.secure = true;
+    }
+
+    res
+    .status(statusCode)
+    .cookie('token', token, options)
+    .json({
+        success: true,
+        token
+    })
+}
 
 module.exports = router

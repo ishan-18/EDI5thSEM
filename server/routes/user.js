@@ -22,7 +22,7 @@ router.get('/', async (req,res) => {
     }
 })
 
-router.get('/:id', protect, authorize("admin"), async (req,res) => {
+router.get('/:id', protect, async (req,res) => {
     try {
         const user = await User.findById(req.params.id)
         if(user){
